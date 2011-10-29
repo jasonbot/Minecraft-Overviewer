@@ -241,7 +241,7 @@ class World(object):
         # col - row = chunkx + chunkx => (col - row)/2 = chunkx
         return ((col - row) / 2, (col + row) / 2)
     
-    def findTrueSpawn(self):
+    def find_true_spawn(self):
         """Adds the true spawn location to self.POI.  The spawn Y coordinate
         is almost always the default of 64.  Find the first air block above
         that point for the true spawn location"""
@@ -292,10 +292,11 @@ class World(object):
                 msg="Spawn", type="spawn", chunk=(chunkX, chunkY)))
         self.spawn = (disp_spawnX, spawnY, disp_spawnZ)
 
-    def go(self, procs):
-        """Scan the world directory, to fill in
-        self.{min,max}{col,row} for use later in quadtree.py. This
-        also does other world-level processing."""
+    def determine_bounds(self):
+        """Scan the chunks already in memory, to fill in
+        self.{min,max}{col,row} for use later in quadtree.py.
+
+        """
         
         logging.info("Scanning chunks")
         # find the dimensions of the map, in region files
@@ -334,7 +335,35 @@ class World(object):
         self.minrow = minrow
         self.maxrow = maxrow
 
-        self.findTrueSpawn()
+    def determine_depth(self):
+        """Calculates how deep a quadtree needs to be given the boundaries of this world.
+        Must be called after determine_bounds()
+
+        """
+        # Determine quadtree depth (midpoint is always 0,0)
+        for p in xrange(37):
+            # Will 2^p tiles wide and high suffice?
+
+            # X has twice as many chunks as tiles, then halved since this is a
+            # radius
+            xradius = 2**p
+            # Y has 4 times as many chunks as tiles, then halved since this is
+            # a radius
+            yradius = 2*2**p
+            if (xradius >= self.maxcol and -xradius <= self.mincol and
+                    yradius >= self.maxrow and -yradius <= self.minrow
+                    ):
+                break
+        
+        if p < 15:
+            self.depth = p
+        else:
+            raise ValueError("Your map is waaaay too big! Use the 'zoom' option in 'settings.py'. Overviewer is estimating %i zoom levels, but you probably want less." % (p,))
+
+
+    def set_depth(self, depth):
+        """Just sets the depth. Called if --zoom was given"""
+        self.depth = depth
 
     def _get_north_rotations(self):
         if self.north_direction == 'upper-left':

@@ -49,14 +49,13 @@ def iterate_base4(d):
     return itertools.product(xrange(4), repeat=d)
    
 class QuadtreeGen(object):
-    def __init__(self, worldobj, destdir, bgcolor, depth=None, tiledir=None, forcerender=False, imgformat=None, imgquality=95, optimizeimg=None, rendermode="normal"):
+    def __init__(self, worldobj, destdir, bgcolor, tiledir=None, forcerender=False, imgformat=None, imgquality=95, optimizeimg=None, rendermode="normal"):
         """Generates a quadtree from the world given into the
         given dest directory
 
         worldobj is a world.WorldRenderer object that has already been processed
 
-        If depth is given, it overrides the calculated value. Otherwise, the
-        minimum depth that contains all chunks is calculated and used.
+        The passed in worldobject computes and determines the depth of this quadtree
 
         """
         assert(imgformat)
@@ -78,32 +77,12 @@ class QuadtreeGen(object):
             tiledir = rendermode
         self.tiledir = tiledir        
         
-        if depth is None:
-            # Determine quadtree depth (midpoint is always 0,0)
-            for p in xrange(64):
-                # Will 2^p tiles wide and high suffice?
+        self.p = worldobj.depth
 
-                # X has twice as many chunks as tiles, then halved since this is a
-                # radius
-                xradius = 2**p
-                # Y has 4 times as many chunks as tiles, then halved since this is
-                # a radius
-                yradius = 2*2**p
-                if xradius >= worldobj.maxcol and -xradius <= worldobj.mincol and \
-                        yradius >= worldobj.maxrow and -yradius <= worldobj.minrow:
-                    break
-            
-            if p < 15:
-                self.p = p
-            else:
-                raise ValueError("Your map is waaaay too big! Use the 'zoom' option in 'settings.py'. Overviewer is estimating %i zoom levels, but you probably want less." % (p,))
-
-        else:
-            self.p = depth
-            xradius = 2**depth
-            yradius = 2*2**depth
-
-        # Make new row and column ranges
+        # Determine the row and column ranges for the chunks we're rendering,
+        # which depend directly on the requested depth of the quadtree.
+        xradius = 2**worldobj.depth
+        yradius = 2*2**worldobj.depth
         self.mincol = -xradius
         self.maxcol = xradius
         self.minrow = -yradius
