@@ -376,7 +376,7 @@ dir but you forgot to put quotes around the directory, since it contains spaces.
     
     # do quadtree-level preprocessing
     for qtree in q:
-        qtree.go(options.procs)
+        qtree.check_depths()
 
     # create the distributed render
     r = rendernode.RenderNode(q, options)
